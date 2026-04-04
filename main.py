@@ -67,12 +67,18 @@ def login():
         user = cursor.fetchone()
         conn.close()
 
-        if user and check_password_hash(user["password"], password):
-            session["user"] = username
-            return redirect(url_for("dashboard"))
-        else:
-            flash("Invalid username or password.")
+        if user is None:
+            flash("User not recognized. Please check your username.", "error")
             return redirect(url_for("login"))
+
+        if not check_password_hash(user["password"], password):
+            flash("Incorrect password. Please try again." , "error")
+            return redirect(url_for("login"))
+
+        # Successful login
+        flash("Login successful. Welcome!", "success")
+        session["user"] = username
+        return redirect(url_for("dashboard"))
 
     return render_template("login.html")
 

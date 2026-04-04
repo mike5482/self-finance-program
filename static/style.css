@@ -1,0 +1,30 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    color: #333;
+}
+
+h2 {
+    color: #555;
+}
+
+.flash-messages {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 10px;
+}
+
+.flash-messages li.error {
+    color: red;
+    font-weight: bold;
+}
+
+.flash-messages li.success {
+    color: green;
+    font-weight: bold;
+}
