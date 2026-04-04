@@ -17,6 +17,8 @@
 
 <p>Welcome {{ user }}!</p>
 
+<a href="{{ url_for('add_transaction') }}">Add Transaction</a>
+
 <a href="{{ url_for('logout') }}">Logout</a>
 
 {% endblock %}
