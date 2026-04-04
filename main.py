@@ -72,12 +72,18 @@ def login():
             return redirect(url_for("login"))
 
         if not check_password_hash(user["password"], password):
-            flash("Incorrect password. Please try again." , "error")
+            flash("Incorrect password. Please try again.", "error")
             return redirect(url_for("login"))
 
         # Successful login
         flash("Login successful. Welcome!", "success")
+
+        # 🔥 THIS WAS MISSING — this is what your Add Transaction route needs
+        session["user_id"] = user["id"]
+
+        # Optional but nice for display
         session["user"] = username
+
         return redirect(url_for("dashboard"))
 
     return render_template("login.html")
@@ -88,6 +94,36 @@ def dashboard():
         return redirect(url_for("login"))
 
     return render_template("dashboard.html", user=session["user"])
+
+@app.route("/add", methods=["GET", "POST"])
+def add_transaction():
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("You must be logged in to add transactions.", "error")
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        amount = request.form["amount"]
+        date = request.form["date"]
+        description = request.form["description"]
+        type_ = request.form["type"]          # income or expense
+        primary_category = request.form["category"]  # dropdown value
+
+        conn = sqlite3.connect("finance.db")
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO transactions (user_id, amount, date, description, type, category_id)
+            VALUES (?, ?, ?, ?, ?, NULL)
+        """, (user_id, amount, date, description, primary_category))
+
+        conn.commit()
+        conn.close()
+
+        flash("Transaction added successfully!", "success")
+        return redirect(url_for("dashboard"))
+
+    return render_template("add_transaction.html")
 
 
 @app.route("/logout")
