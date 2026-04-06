@@ -1,3 +1,17 @@
+# ------------------------------------------------------------
+# File: init_db.py
+# Date: April 2026
+# Authors:
+#   - Karan Gosai
+#   - Michael Groves
+#   - Kamal Al Shawa
+#   - James Smith
+#
+# Description:
+#   Initializes the SQLite database and creates all required
+#   tables for users, categories, and transactions.
+# ------------------------------------------------------------
+
 import sqlite3
 
 connection = sqlite3.connect("finance.db")
