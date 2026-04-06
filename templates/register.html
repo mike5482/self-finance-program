@@ -1,14 +1,24 @@
 {% extends "base.html" %}
-
 {% block content %}
 
-<h2>Register</h2>
-<form method="POST">
-    <input name="username" placeholder="Username"><br>
-    <input name="password" type="password" placeholder="Password"><br>
-    <button type="submit">Register</button>
-</form>
+<div class="row justify-content-center">
+    <div class="col-md-4">
+        <h3 class="text-center mb-3">Create Account</h3>
 
-<p><a href="/login">Go to Login</a></p>
+        <form method="POST">
+            <div class="mb-3">
+                <label>Username</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label>Password</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+
+            <button class="btn btn-success w-100">Register</button>
+        </form>
+    </div>
+</div>
 
 {% endblock %}

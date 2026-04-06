@@ -1,11 +1,60 @@
 {% extends "base.html" %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Welcome{% endblock %}
 
 {% block content %}
-<h2>Welcome!</h2>
-<p>This is your first Flask webpage.</p>
 
-<p><a href="{{ url_for('register') }}">Register</a></p>
-<p><a href="{{ url_for('login') }}">Login</a></p>
+<div class="text-center mb-5">
+    <h1 class="fw-bold">Welcome to Your Personal Finance Tracker</h1>
+    <p class="lead text-muted">
+        Track your income, expenses, and spending habits — all in one simple dashboard.
+    </p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body text-center">
+                <h4 class="mb-3">Take Control of Your Money</h4>
+                <p class="text-muted">
+                    Easily log transactions, view your balance, and understand where your money goes.
+                </p>
+
+                <a href="{{ url_for('register') }}" class="btn btn-success btn-lg me-2">
+                    Create an Account
+                </a>
+
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                    Login
+                </a>
+            </div>
+        </div>
+
+        <div class="row text-center mt-4">
+            <div class="col-md-4 mb-3">
+                <div class="card p-3 shadow-sm">
+                    <h5 class="fw-bold">💰 Track Income</h5>
+                    <p class="text-muted small">Record all your earnings in seconds.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card p-3 shadow-sm">
+                    <h5 class="fw-bold">📉 Monitor Expenses</h5>
+                    <p class="text-muted small">See where your money is going.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card p-3 shadow-sm">
+                    <h5 class="fw-bold">📊 View Insights</h5>
+                    <p class="text-muted small">Understand your financial habits.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 {% endblock %}
