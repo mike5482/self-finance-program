@@ -10,17 +10,24 @@
         <input type="date" name="date" class="form-control" required>
     </div>
 
+    <!-- Top-level type dropdown -->
     <div class="mb-3">
         <label>Type</label>
-        <select name="type" class="form-select">
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
+        <select id="type" name="type" class="form-select" required>
+            {% for t in category_map.keys() %}
+                <option value="{{ t }}">{{ t|capitalize }}</option>
+            {% endfor %}
         </select>
     </div>
 
+    <!-- Dynamic category dropdown -->
     <div class="mb-3">
         <label>Category</label>
-        <input type="text" name="category" class="form-control" required>
+        <select id="category" name="category" class="form-select" required>
+            {% for c in default_categories %}
+                <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+        </select>
     </div>
 
     <div class="mb-3">
@@ -36,4 +43,28 @@
     <button class="btn btn-primary">Save</button>
 </form>
 
+<!-- Dynamic category update script -->
+<script>
+    const categoryMap = {{ category_map | tojson }};
+    const typeSelect = document.getElementById("type");
+    const categorySelect = document.getElementById("category");
+
+    typeSelect.addEventListener("change", function () {
+        const selectedType = this.value;
+        const categories = categoryMap[selectedType];
+
+        // Clear old options
+        categorySelect.innerHTML = "";
+
+        // Add new options
+        categories.forEach(cat => {
+            const opt = document.createElement("option");
+            opt.value = cat;
+            opt.textContent = cat;
+            categorySelect.appendChild(opt);
+        });
+    });
+</script>
+
 {% endblock %}
+
