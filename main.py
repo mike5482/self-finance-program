@@ -129,7 +129,59 @@ def dashboard():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    return render_template("dashboard.html", user=session["user"])
+    user_id = session["user_id"]
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Calculate income and expense totals
+    cursor.execute("""
+        SELECT
+            COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0) AS income_total,
+            COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0) AS expense_total
+        FROM transactions
+        WHERE user_id = ?
+    """, (user_id,))
+    totals = cursor.fetchone()
+    income_total = totals["income_total"]
+    expense_total = totals["expense_total"]
+    balance = income_total - expense_total
+
+    # Get 10 most recent transactions
+    cursor.execute("""
+        SELECT t.date, t.type, t.amount, c.name AS category
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.user_id = ?
+        ORDER BY t.date DESC
+        LIMIT 10
+    """, (user_id,))
+    transactions = cursor.fetchall()
+
+    # Category breakdown for spending chart (expenses only)
+    cursor.execute("""
+        SELECT c.name AS category, SUM(t.amount) AS total
+        FROM transactions t
+        JOIN categories c ON t.category_id = c.id
+        WHERE t.user_id = ? AND t.type = 'expense'
+        GROUP BY c.name
+        ORDER BY total DESC
+    """, (user_id,))
+    category_totals = cursor.fetchall()
+    conn.close()
+
+    chart_labels = [row["category"] for row in category_totals]
+    chart_data = [float(row["total"]) for row in category_totals]
+
+    return render_template(
+        "dashboard.html",
+        user=session["user"],
+        income_total=f"{income_total:.2f}",
+        expense_total=f"{expense_total:.2f}",
+        balance=f"{balance:.2f}",
+        transactions=transactions,
+        chart_labels=chart_labels,
+        chart_data=chart_data
+    )
 
 
 # ------------------------------------------------------------
@@ -268,6 +320,88 @@ def monthly_summary():
     )
 
 
+
+
+# ------------------------------------------------------------
+# ROUTE: Edit Transaction (GET + POST)
+# ------------------------------------------------------------
+@app.route("/edit/<int:transaction_id>", methods=["GET", "POST"])
+def edit_transaction(transaction_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("You must be logged in.", "error")
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Fetch the transaction (ensure it belongs to the logged-in user)
+    cursor.execute("""
+        SELECT t.*, c.name AS category
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.id = ? AND t.user_id = ?
+    """, (transaction_id, user_id))
+    transaction = cursor.fetchone()
+
+    if not transaction:
+        conn.close()
+        flash("Transaction not found.", "error")
+        return redirect(url_for("view_transactions"))
+
+    if request.method == "POST":
+        amount = request.form["amount"]
+        date = request.form["date"]
+        description = request.form["description"]
+        type_selected = request.form["type"]
+        category_selected = request.form["category"]
+
+        cursor.execute("SELECT id FROM categories WHERE name = ?", (category_selected,))
+        category_row = cursor.fetchone()
+
+        if category_row is None:
+            conn.close()
+            flash("Selected category not found.", "error")
+            return redirect(url_for("edit_transaction", transaction_id=transaction_id))
+
+        cursor.execute("""
+            UPDATE transactions
+            SET amount = ?, date = ?, description = ?, type = ?, category_id = ?
+            WHERE id = ? AND user_id = ?
+        """, (amount, date, description, type_selected, category_row["id"], transaction_id, user_id))
+
+        conn.commit()
+        conn.close()
+        flash("Transaction updated!", "success")
+        return redirect(url_for("view_transactions"))
+
+    conn.close()
+    return render_template(
+        "edit_transaction.html",
+        transaction=transaction,
+        category_map=CATEGORY_MAP,
+        default_categories=CATEGORY_MAP.get(transaction["type"], [])
+    )
+
+
+# ------------------------------------------------------------
+# ROUTE: Delete Transaction
+# ------------------------------------------------------------
+@app.route("/delete/<int:transaction_id>", methods=["POST"])
+def delete_transaction(transaction_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        flash("You must be logged in.", "error")
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM transactions WHERE id = ? AND user_id = ?", (transaction_id, user_id))
+    conn.commit()
+    conn.close()
+
+    flash("Transaction deleted.", "success")
+    return redirect(url_for("view_transactions"))
 
 
 # ------------------------------------------------------------
