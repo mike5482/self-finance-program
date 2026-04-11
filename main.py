@@ -232,7 +232,7 @@ def add_transaction():
     return render_template(
         "add_transaction.html",
         category_map=CATEGORY_MAP,
-        default_categories=CATEGORY_MAP["expense"]
+        default_categories=CATEGORY_MAP["income"]
     )
 
 # ------------------------------------------------------------
