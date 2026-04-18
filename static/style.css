@@ -92,3 +92,54 @@ button {
 button:hover {
     opacity: 0.9;
 }
+/* Investor‑style insight cards */
+.insight-card {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.insight-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.insight-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+}
+
+.insight-value {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #2d2d2d;
+}
+
+/* Soft green investor-style Insights Header */
+.insights-header {
+    background: linear-gradient(135deg, #e8f5e9, #d0f0d6); /* soft mint → soft green */
+    border: 1px solid rgba(0,0,0,0.04);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.insights-title {
+    font-size: 1.7rem;
+    font-weight: 600;
+    color: #2f5d3a; /* warm, deep green */
+    margin-bottom: 6px;
+}
+
+.insights-subtitle {
+    font-size: 0.95rem;
+    color: #4f6f57; /* soft muted green-gray */
+    margin: 0;
+}

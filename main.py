@@ -15,7 +15,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
-
+import datetime
 
 # ------------------------------------------------------------
 # CATEGORY MAP (Top-level → Subcategories)
@@ -27,6 +27,15 @@ CATEGORY_MAP = {
     "transfer": ["Bank Transfer", "Credit Card Payment"],
     "gift": ["Gift Sent", "Donation"]
 }
+
+def to_timestamp(date_str):
+    """Convert YYYY-MM-DD to JS timestamp (ms)."""
+    dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    return int(dt.timestamp() * 1000)
+
+def six_months_ago_timestamp():
+    six_months_ago = datetime.datetime.now() - datetime.timedelta(days=180)
+    return int(six_months_ago.timestamp() * 1000)
 
 
 # ------------------------------------------------------------
@@ -330,7 +339,7 @@ def insights():
     cursor = conn.cursor()
 
     # -------------------------------
-    # Chart 1: Category Trends (6 months)
+    # Chart 1: Category Trends (expenses only)
     # -------------------------------
     cursor.execute("""
         SELECT 
@@ -402,18 +411,18 @@ def insights():
     top_totals = [row["total"] for row in top_rows]
 
     # -------------------------------
-    # Chart 4: Transaction Timeline
+    # Chart 4: Transaction Timeline (income + expense)
     # -------------------------------
     cursor.execute("""
         SELECT 
             t.date,
             t.amount,
             t.description,
-            c.name AS category
+            c.name AS category,
+            t.type
         FROM transactions t
         JOIN categories c ON t.category_id = c.id
         WHERE t.user_id = ?
-          AND t.type = 'expense'
           AND t.date >= date('now', '-6 months')
         ORDER BY t.date;
     """, (user_id,))
@@ -422,13 +431,28 @@ def insights():
 
     timeline_points = [
         {
-            "x": row["date"],
+            "x": to_timestamp(row["date"]),
             "y": row["amount"],
             "category": row["category"],
+            "type": row["type"],
             "description": row["description"]
         }
         for row in timeline_rows
     ]
+
+    six_months_ago_ts = six_months_ago_timestamp()
+
+    # -------------------------------
+    # Summary Cards
+    # -------------------------------
+    total_spending_6mo = sum(total_by_month) if total_by_month else 0
+    top_category_name = top_categories[0] if top_categories else "N/A"
+
+    if total_by_month:
+        max_month_index = total_by_month.index(max(total_by_month))
+        most_expensive_month = months[max_month_index]
+    else:
+        most_expensive_month = "N/A"
 
     conn.close()
 
@@ -442,9 +466,12 @@ def insights():
         expenses=expenses,
         top_categories=top_categories,
         top_totals=top_totals,
-        timeline_points=timeline_points
+        timeline_points=timeline_points,
+        six_months_ago_ts=six_months_ago_ts,
+        total_spending_6mo=total_spending_6mo,
+        top_category_name=top_category_name,
+        most_expensive_month=most_expensive_month
     )
-
 # ------------------------------------------------------------
 # ROUTE: Edit Transaction (GET + POST)
 # ------------------------------------------------------------
