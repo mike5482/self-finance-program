@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Insights (Last 6 Months)</h2>
+<p class="text-muted">Explore long-term spending patterns and financial trends.</p>
+
+<hr>
+
+<!-- ========================= -->
+<!-- SECTION 1: CATEGORY TRENDS -->
+<!-- ========================= -->
+<h3>Category Spending Trends</h3>
+<p class="text-muted">Track how each spending category changes month-to-month.</p>
+
+<canvas id="categoryTrendChart" height="120"></canvas>
+
+<hr class="mt-5">
+
+<!-- ========================= -->
+<!-- SECTION 2: INCOME VS EXPENSE -->
+<!-- ========================= -->
+<h3>Income vs. Expenses</h3>
+<p class="text-muted">Compare your monthly income and expenses to identify surplus or deficit trends.</p>
+
+<canvas id="incomeExpenseChart" height="120"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    /* ---------------------------
+       DATA FROM FLASK
+    --------------------------- */
+    const months = {{ months|tojson }};
+    const dataByCategory = {{ data_by_category|tojson }};
+    const totalByMonth = {{ total_by_month|tojson }};
+
+    const monthsIE = {{ months_ie|tojson }};
+    const income = {{ income|tojson }};
+    const expenses = {{ expenses|tojson }};
+
+    /* ---------------------------
+       RANDOM COLOR GENERATOR
+    --------------------------- */
+    function randomColor(alpha = 1) {
+        const r = Math.floor(Math.random() * 200);
+        const g = Math.floor(Math.random() * 200);
+        const b = Math.floor(Math.random() * 200);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    /* ---------------------------
+       CHART 1: CATEGORY TRENDS
+    --------------------------- */
+    const datasets1 = [];
+
+    for (const [category, values] of Object.entries(dataByCategory)) {
+        const color = randomColor(1);
+
+        datasets1.push({
+            label: category,
+            data: values,
+            borderColor: color,
+            backgroundColor: randomColor(0.2),
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointBackgroundColor: color,
+            pointHoverBackgroundColor: color
+        });
+    }
+
+    // Summary line
+    datasets1.push({
+        label: "Total Spending",
+        data: totalByMonth,
+        borderColor: "black",
+        backgroundColor: "rgba(0,0,0,0.1)",
+        borderWidth: 3,
+        tension: 0.3,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        pointBackgroundColor: "black",
+        pointHoverBackgroundColor: "black"
+    });
+
+    new Chart(document.getElementById("categoryTrendChart"), {
+        type: "line",
+        data: {
+            labels: months,
+            datasets: datasets1
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (context) =>
+                            `${context.dataset.label}: $${context.raw.toFixed(2)}`
+                    }
+                },
+                legend: { position: "bottom" }
+            },
+            scales: {
+                y: { beginAtZero: true },
+                x: {}
+            }
+        }
+    });
+
+    /* ---------------------------
+       CHART 2: INCOME VS EXPENSE
+    --------------------------- */
+    new Chart(document.getElementById("incomeExpenseChart"), {
+        type: "bar",
+        data: {
+            labels: monthsIE,
+            datasets: [
+                {
+                    label: "Income",
+                    data: income,
+                    backgroundColor: "rgba(54, 162, 235, 0.7)",
+                    borderColor: "rgba(54, 162, 235, 1)",
+                    borderWidth: 1
+                },
+                {
+                    label: "Expenses",
+                    data: expenses,
+                    backgroundColor: "rgba(255, 99, 132, 0.7)",
+                    borderColor: "rgba(255, 99, 132, 1)",
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (context) =>
+                            `${context.dataset.label}: $${context.raw.toFixed(2)}`
+                    }
+                },
+                legend: { position: "bottom" }
+            },
+            scales: {
+                y: { beginAtZero: true },
+                x: {}
+            }
+        }
+    });
+</script>
+
+
+<hr class="mt-5">
+
+<!-- ========================= -->
+<!-- SECTION 3: TOP 5 CATEGORIES -->
+<!-- ========================= -->
+<h3>Top 5 Spending Categories</h3>
+<p class="text-muted">Your biggest spending categories over the last six months.</p>
+
+<canvas id="topCategoriesChart" height="100"></canvas>
+
+<script>
+    const topCategories = {{ top_categories|tojson }};
+    const topTotals = {{ top_totals|tojson }};
+
+    new Chart(document.getElementById("topCategoriesChart"), {
+        type: "bar",
+        data: {
+            labels: topCategories,
+            datasets: [{
+                label: "Total Spent ($)",
+                data: topTotals,
+                backgroundColor: [
+                    "rgba(255, 99, 132, 0.7)",
+                    "rgba(54, 162, 235, 0.7)",
+                    "rgba(255, 206, 86, 0.7)",
+                    "rgba(75, 192, 192, 0.7)",
+                    "rgba(153, 102, 255, 0.7)"
+                ],
+                borderColor: [
+                    "rgba(255, 99, 132, 1)",
+                    "rgba(54, 162, 235, 1)",
+                    "rgba(255, 206, 86, 1)",
+                    "rgba(75, 192, 192, 1)",
+                    "rgba(153, 102, 255, 1)"
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (context) =>
+                            `${context.label}: $${context.raw.toFixed(2)}`
+                    }
+                },
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true },
+                x: {}
+            }
+        }
+    });
+</script>
+
+
+<a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-4">Back to Dashboard</a>
+
+{% endblock %}

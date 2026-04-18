@@ -319,8 +319,131 @@ def monthly_summary():
         transactions=transactions
     )
 
+@app.route("/insights")
+def insights():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
 
+    user_id = session["user_id"]
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # -------------------------------
+    # Chart 1: Category Trends (6 months)
+    # -------------------------------
+    cursor.execute("""
+        SELECT 
+            strftime('%Y-%m', t.date) AS month,
+            c.name AS category,
+            SUM(t.amount) AS total
+        FROM transactions t
+        JOIN categories c ON t.category_id = c.id
+        WHERE t.user_id = ?
+          AND t.type = 'expense'
+          AND t.date >= date('now', '-6 months')
+        GROUP BY month, category
+        ORDER BY month;
+    """, (user_id,))
+
+    rows = cursor.fetchall()
+
+    months = sorted(list({row["month"] for row in rows}))
+    categories = sorted(list({row["category"] for row in rows}))
+
+    data_by_category = {cat: [0] * len(months) for cat in categories}
+    total_by_month = [0] * len(months)
+
+    for row in rows:
+        idx = months.index(row["month"])
+        data_by_category[row["category"]][idx] = row["total"]
+        total_by_month[idx] += row["total"]
+
+    # -------------------------------
+    # Chart 2: Income vs Expense
+    # -------------------------------
+    cursor.execute("""
+        SELECT 
+            strftime('%Y-%m', date) AS month,
+            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS total_income,
+            SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS total_expense
+        FROM transactions
+        WHERE user_id = ?
+          AND date >= date('now', '-6 months')
+        GROUP BY month
+        ORDER BY month;
+    """, (user_id,))
+
+    rows2 = cursor.fetchall()
+
+    months_ie = [row["month"] for row in rows2]
+    income = [row["total_income"] for row in rows2]
+    expenses = [row["total_expense"] for row in rows2]
+
+    # -------------------------------
+    # Chart 3: Top 5 Categories
+    # -------------------------------
+    cursor.execute("""
+        SELECT 
+            c.name AS category,
+            SUM(t.amount) AS total
+        FROM transactions t
+        JOIN categories c ON t.category_id = c.id
+        WHERE t.user_id = ?
+          AND t.type = 'expense'
+          AND t.date >= date('now', '-6 months')
+        GROUP BY c.name
+        ORDER BY total DESC
+        LIMIT 5;
+    """, (user_id,))
+
+    top_rows = cursor.fetchall()
+    top_categories = [row["category"] for row in top_rows]
+    top_totals = [row["total"] for row in top_rows]
+
+    # -------------------------------
+    # Chart 4: Transaction Timeline
+    # -------------------------------
+    cursor.execute("""
+        SELECT 
+            t.date,
+            t.amount,
+            t.description,
+            c.name AS category
+        FROM transactions t
+        JOIN categories c ON t.category_id = c.id
+        WHERE t.user_id = ?
+          AND t.type = 'expense'
+          AND t.date >= date('now', '-6 months')
+        ORDER BY t.date;
+    """, (user_id,))
+
+    timeline_rows = cursor.fetchall()
+
+    timeline_points = [
+        {
+            "x": row["date"],
+            "y": row["amount"],
+            "category": row["category"],
+            "description": row["description"]
+        }
+        for row in timeline_rows
+    ]
+
+    conn.close()
+
+    return render_template(
+        "insights.html",
+        months=months,
+        data_by_category=data_by_category,
+        total_by_month=total_by_month,
+        months_ie=months_ie,
+        income=income,
+        expenses=expenses,
+        top_categories=top_categories,
+        top_totals=top_totals,
+        timeline_points=timeline_points
+    )
 
 # ------------------------------------------------------------
 # ROUTE: Edit Transaction (GET + POST)
