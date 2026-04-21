@@ -13,13 +13,17 @@ def test_register_duplicate_username(client):
     assert resp.status_code == 200
     assert b"already exists" in resp.data
 
-
 def test_login_success(client):
     register_user(client, "carol", "goodpass")
     resp = login_user(client, "carol", "goodpass")
     assert resp.status_code == 200
     assert b"Dashboard" in resp.data
 
+def test_login_missing_password(client):
+    register_user(client, "nopass", "realpass")
+    resp = login_user(client, "nopass", "")
+    assert resp.status_code == 200
+    assert b"password" in resp.data.lower() or b"required" in resp.data.lower()
 
 def test_login_unknown_user(client):
     resp = login_user(client, "nobody_here", "any")
@@ -34,6 +38,13 @@ def test_login_wrong_password(client):
     assert b"Incorrect password" in resp.data
 
 
+def test_register_missing_password(client):
+    resp = register_user(client, "no_pass_user", "")
+    assert resp.status_code == 200
+    # Look for any error message related to missing password
+    assert b"password" in resp.data.lower() or b"required" in resp.data.lower()
+
+
 def test_logout_clears_session(client):
     register_user(client, "eve", "evepass")
     login_user(client, "eve", "evepass")
@@ -41,3 +52,7 @@ def test_logout_clears_session(client):
     resp = client.get("/dashboard", follow_redirects=False)
     assert resp.status_code in (301, 302)
     assert "/login" in resp.headers.get("Location", "")
+
+
+
+
