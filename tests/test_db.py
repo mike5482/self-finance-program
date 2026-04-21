@@ -1,45 +1,31 @@
 import sqlite3
-import os
 
-# Path to the project root (one folder up from /tests)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from category_map import CATEGORY_MAP
+from init_db import init_database
 
-# Path to finance.db inside the project root
-DB_PATH = os.path.join(BASE_DIR, "finance.db")
 
-# Safety check: prevent accidental creation of a new DB
-if not os.path.exists(DB_PATH):
-    raise FileNotFoundError(f"ERROR: finance.db not found at:\n{DB_PATH}\n"
-                            "Make sure you ran init_db.py and that you're in the correct project structure.")
+def _expected_category_rows():
+    return sum(len(names) for names in CATEGORY_MAP.values())
 
-def show_users():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
 
-    print("\n=== USERS ===")
-    cursor.execute("SELECT id, username FROM users;")
-    for row in cursor.fetchall():
-        print(row)
-
+def test_init_database_creates_tables(db_path):
+    init_database(db_path)
+    conn = sqlite3.connect(db_path)
+    names = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+    }
     conn.close()
+    assert "users" in names
+    assert "categories" in names
+    assert "transactions" in names
 
 
-def show_transactions():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    print("\n=== TRANSACTIONS ===")
-    cursor.execute("""
-        SELECT id, user_id, amount, date, description, type
-        FROM transactions;
-    """)
-    for row in cursor.fetchall():
-        print(row)
-
+def test_init_database_seeds_categories(db_path):
+    init_database(db_path)
+    conn = sqlite3.connect(db_path)
+    count = conn.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
     conn.close()
-
-
-if __name__ == "__main__":
-    show_users()
-    show_transactions()
-    print("\nDatabase test complete.\n")
+    assert count == _expected_category_rows()
