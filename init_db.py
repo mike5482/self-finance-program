@@ -13,23 +13,17 @@
 #   Seeds default categories for income, expense, transfer, and gift.
 # ------------------------------------------------------------
 
+import os
 import sqlite3
 
-# Category map used for seeding the database
-CATEGORY_MAP = {
-    "income": ["Salary", "Bonus", "Interest", "Gift Income"],
-    "expense": ["Groceries", "Rent", "Utilities", "Dining", "Shopping", "Gas"],
-    "transfer": ["Bank Transfer", "Credit Card Payment"],
-    "gift": ["Gift Sent", "Donation"]
-}
+from category_map import CATEGORY_MAP
 
-def init_db():
-    conn = sqlite3.connect("finance.db")
+
+def init_database(db_path: str) -> None:
+    """Create tables and seed categories at the given SQLite path."""
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # ------------------------------------------------------------
-    # Create USERS table
-    # ------------------------------------------------------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,9 +32,6 @@ def init_db():
         );
     """)
 
-    # ------------------------------------------------------------
-    # Create CATEGORIES table
-    # ------------------------------------------------------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,9 +40,6 @@ def init_db():
         );
     """)
 
-    # ------------------------------------------------------------
-    # Create TRANSACTIONS table
-    # ------------------------------------------------------------
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,9 +54,6 @@ def init_db():
         );
     """)
 
-    # ------------------------------------------------------------
-    # Seed categories (only if they don't already exist)
-    # ------------------------------------------------------------
     for type_name, category_list in CATEGORY_MAP.items():
         for category in category_list:
             cursor.execute("""
@@ -78,8 +63,9 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Database initialized successfully with all tables and categories.")
 
 
 if __name__ == "__main__":
-    init_db()
+    default_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "finance.db")
+    init_database(default_path)
+    print("Database initialized successfully with all tables and categories.")
